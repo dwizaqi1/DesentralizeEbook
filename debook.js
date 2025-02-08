@@ -45,6 +45,31 @@ class PDFViewer {
         this.walletInput = wallet;
     }
 
+    async fetchSecretKey(licensePubKey, wallet) {
+        try {
+            const response = await fetch(`/debook/api/v1//GetKey`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ licensePubKey, wallet })
+            });
+    
+            const data = await response.json();
+    
+            if (!response.ok) {
+                console.error(`❌ Gagal mengambil secret key: ${data.error}`);
+                return null;
+            }
+    
+            console.log(`✅ Secret Key Diterima: ${data.secretKey}`);
+            return data.secretKey;
+        } catch (error) {
+            console.error("❌ Terjadi kesalahan saat fetch secret key:", error);
+            return null;
+        }
+    }    
+
     async decryptAES(encryptedData, key) {
         const iv = encryptedData.slice(0, 16);
         const data = encryptedData.slice(16);
@@ -83,8 +108,6 @@ class PDFViewer {
         const manifest = JSON.parse(manifestText);
         const licensePubKey = manifest.publicKey;
 
-        console.log("📜 Dapatkan License Public Key:", licensePubKey);
-
         // Gunakan wallet yang bisa diedit
         const wallet = this.walletInput;
         if (!wallet) {
@@ -93,6 +116,10 @@ class PDFViewer {
         }
 
         const secretKey = await fetchSecretKey(licensePubKey, wallet);
+        if (!secretKey) {
+            console.error("❌ Secret key tidak ditemukan!");
+            return;
+        }
 
         if (!secretKey) {
             console.error("❌ Secret key tidak ditemukan!");
@@ -101,10 +128,13 @@ class PDFViewer {
 
         const key = new TextEncoder().encode(secretKey).slice(0, 32);
 
-        const encryptedFile = zipContents.file("data.encrypted");
-        if (!encryptedFile) {
-            console.error("❌ File terenkripsi tidak ditemukan dalam ZIP!");
-            return;
+        let encryptedFile = null;
+        for (const fileName of Object.keys(zipContents.files)) {
+            if (fileName.endsWith(".ebookcontent")) {
+                encryptedFile = zipContents.file(fileName);
+                //console.log(`📂 File terenkripsi ditemukan: ${fileName}`);
+                break;
+            }
         }
 
         const encryptedData = await encryptedFile.async("uint8array");
