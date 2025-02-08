@@ -47,7 +47,8 @@ class PDFViewer {
 
     async fetchSecretKey(licensePubKey, wallet) {
         try {
-            const response = await fetch(`/debook/api/v1//GetKey`, {
+            // Pastikan URL endpoint sudah benar (tanpa double slash)
+            const response = await fetch(`http://localhost:3000/debook/api/v1/GetKey`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -55,14 +56,15 @@ class PDFViewer {
                 body: JSON.stringify({ licensePubKey, wallet })
             });
     
-            const data = await response.json();
-    
+            // Jika response tidak OK, tampilkan error
             if (!response.ok) {
-                console.error(`❌ Gagal mengambil secret key: ${data.error}`);
+                const errorData = await response.text(); // ambil text dari response
+                console.error(`❌ Gagal mengambil secret key: ${errorData}`);
                 return null;
             }
     
-            console.log(`✅ Secret Key Diterima: ${data.secretKey}`);
+            // Parse JSON jika response OK
+            const data = await response.json();
             return data.secretKey;
         } catch (error) {
             console.error("❌ Terjadi kesalahan saat fetch secret key:", error);
@@ -116,29 +118,31 @@ class PDFViewer {
         }
 
         const secretKey = await this.fetchSecretKey(licensePubKey, wallet);
-        if (!secretKey) {
-            console.error("❌ Secret key tidak ditemukan!");
+
+        // Jika secretKey adalah array, konversikan langsung ke Uint8Array:
+        const keyBuffer = new Uint8Array(secretKey);
+        // Pastikan keyBuffer memiliki panjang yang sesuai (16, 24, atau 32 bytes)
+        // Misal untuk AES-256, panjangnya harus 32 bytes.
+        if (keyBuffer.length !== 32) {
+            console.error("❌ Secret key tidak memiliki panjang 32 byte!");
             return;
         }
-
-        if (!secretKey) {
-            console.error("❌ Secret key tidak ditemukan!");
-            return;
-        }
-
-        const key = new TextEncoder().encode(secretKey).slice(0, 32);
 
         let encryptedFile = null;
         for (const fileName of Object.keys(zipContents.files)) {
             if (fileName.endsWith(".ebookcontent")) {
                 encryptedFile = zipContents.file(fileName);
-                //console.log(`📂 File terenkripsi ditemukan: ${fileName}`);
                 break;
             }
         }
 
+        if (!encryptedFile) {
+            console.error("❌ File terenkripsi tidak ditemukan!");
+            return;
+        }
+    
         const encryptedData = await encryptedFile.async("uint8array");
-        const decryptedData = await this.decryptAES(encryptedData, key);
+        const decryptedData = await this.decryptAES(encryptedData, keyBuffer);
 
         const decryptedZip = new JSZip();
         const decryptedZipContents = await decryptedZip.loadAsync(decryptedData);
