@@ -1,3 +1,15 @@
+(async function loadJSZip() {
+    if (typeof JSZip === "undefined") {
+        await import("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js");
+    }
+})();
+
+if (typeof JSZip === "undefined") {
+    console.error("JSZip tidak dimuat!");
+} else {
+    console.log("JSZip berhasil dimuat.");
+}
+
 class PDFViewer {
     constructor(options) {
         this.fileInput = document.querySelector(options.fileInput);
