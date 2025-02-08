@@ -12,12 +12,12 @@ if (typeof JSZip === "undefined") {
 
 class PDFViewer {
     constructor(options) {
-        this.fileInput = document.querySelector(options.fileInput);
+        this.fileInput = document.getElementById(options.fileInput);
         this.pageWrapper = document.querySelector(options.pageWrapper);
-        this.nextButton = document.querySelector(options.nextButton);
-        this.prevButton = document.querySelector(options.prevButton);
-        this.pageInput = document.querySelector(options.pageInput);
-        this.pageInfo = document.querySelector(options.pageInfo);
+        this.nextButton = document.getElementById(options.nextButton);
+        this.prevButton = document.getElementById(options.prevButton);
+        this.pageInput = document.getElementById(options.pageInput);
+        this.pageInfo = document.getElementById(options.pageInfo);
 
         this.pages = [];
         this.currentPage = 0;
