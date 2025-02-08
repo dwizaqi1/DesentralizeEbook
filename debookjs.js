@@ -115,7 +115,7 @@ class PDFViewer {
             return;
         }
 
-        const secretKey = await fetchSecretKey(licensePubKey, wallet);
+        const secretKey = await this.fetchSecretKey(licensePubKey, wallet);
         if (!secretKey) {
             console.error("❌ Secret key tidak ditemukan!");
             return;
